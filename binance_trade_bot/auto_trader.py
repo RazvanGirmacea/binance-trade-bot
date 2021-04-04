@@ -98,6 +98,7 @@ class AutoTrader:
         Given a coin, get the current price ratio for every other enabled coin
         """
         ratio_dict: Dict[Pair, float] = {}
+        threads = []
 
         for pair in self.db.get_pairs_from(coin):
             optional_coin_price = all_tickers.get_price(pair.to_coin + self.config.BRIDGE)
@@ -107,12 +108,13 @@ class AutoTrader:
                     "Skipping scouting... optional coin {} not found".format(pair.to_coin + self.config.BRIDGE)
                 )
                 continue
+
             thread = threading.Thread(
-                target=self.db.log_scout,
-                args=(pair, pair.ratio, coin_price, optional_coin_price)
+                target=self.db.log_scout, args=(pair, pair.ratio, coin_price, optional_coin_price)
             )
             thread.start()
             threads.append(thread)
+
             # Obtain (current coin)/(optional coin)
             coin_opt_coin_ratio = coin_price / optional_coin_price
 
@@ -125,7 +127,11 @@ class AutoTrader:
             ) - pair.ratio
 
             # Output scout result for each selected pair
-            progress = (coin_opt_coin_ratio - transaction_fee * self.config.SCOUT_MULTIPLIER * coin_opt_coin_ratio) / pair.ratio * 100
+            progress = (
+                (coin_opt_coin_ratio - transaction_fee * self.config.SCOUT_MULTIPLIER * coin_opt_coin_ratio)
+                / pair.ratio
+                * 100
+            )
             progress_absolute = coin_opt_coin_ratio / pair.ratio * 100
             print(
                 str(datetime.now()) + f" - SCOUTING:RESULT - "
@@ -133,10 +139,6 @@ class AutoTrader:
                 f"({pair.from_coin}: {coin_price}, {pair.to_coin}: {optional_coin_price}) "
                 f"[progress = {progress: .2f}% , progress_nofeenomultiplier = {progress_absolute: .2f}%]"
             )
-        else:
-            # best_pair = max(ratio_dict, key=ratio_dict.get)
-            for thread in threads:
-                thread.join()
         return ratio_dict
 
     def _jump_to_best_coin(self, coin: Coin, coin_price: float, all_tickers: AllTickers):
