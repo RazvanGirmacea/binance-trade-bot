@@ -1,5 +1,3 @@
-import random
-import sys
 import threading
 from datetime import datetime
 from typing import Dict, List
@@ -71,7 +69,7 @@ class AutoTrader:
             for pair in session.query(Pair).filter(Pair.ratio.is_(None)).all():
                 if not pair.from_coin.enabled or not pair.to_coin.enabled:
                     continue
-                self.logger.info(f"Initializing {pair.from_coin} vs {pair.to_coin}")
+                # self.logger.info(f"Initializing {pair.from_coin} vs {pair.to_coin}")
 
                 from_coin_price = all_tickers.get_price(pair.from_coin + self.config.BRIDGE)
                 if from_coin_price is None:
@@ -100,7 +98,6 @@ class AutoTrader:
         Given a coin, get the current price ratio for every other enabled coin
         """
         ratio_dict: Dict[Pair, float] = {}
-        threads = []
 
         for pair in self.db.get_pairs_from(coin):
             optional_coin_price = all_tickers.get_price(pair.to_coin + self.config.BRIDGE)
@@ -131,11 +128,10 @@ class AutoTrader:
             progress = (coin_opt_coin_ratio - transaction_fee * self.config.SCOUT_MULTIPLIER * coin_opt_coin_ratio) / pair.ratio * 100
             progress_absolute = coin_opt_coin_ratio / pair.ratio * 100
             print(
-                str(datetime.now())
-                + f" - SCOUTING:RESULT - "
-                  f"{pair.to_coin} = {ratio_dict[pair]} "
-                  f"({pair.from_coin}: {coin_price}, {pair.to_coin}: {optional_coin_price}) "
-                  f"[progress = {progress: .2f}% , progress_nofeenomultiplier = {progress_absolute: .2f}%]"
+                str(datetime.now()) + f" - SCOUTING:RESULT - "
+                f"{pair.to_coin} = {ratio_dict[pair]} "
+                f"({pair.from_coin}: {coin_price}, {pair.to_coin}: {optional_coin_price}) "
+                f"[progress = {progress: .2f}% , progress_nofeenomultiplier = {progress_absolute: .2f}%]"
             )
         else:
             # best_pair = max(ratio_dict, key=ratio_dict.get)
