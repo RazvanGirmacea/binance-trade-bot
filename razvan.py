@@ -29,38 +29,11 @@ class Razvan:
         self.logger.info(f"Chosen strategy: {self.config.STRATEGY}")
 
         #all_tickers = self.manager.get_all_market_tickers()
-        last_trade: Trade = self.db.get_last_trade()
-        print(last_trade.info())
-        print(last_trade.crypto_starting_balance)
+
+        self.db.set_coins(self.config.SUPPORTED_COIN_LIST)
 
         return
-        session: Session
-        with self.db.db_session() as session:
-            for pair in session.query(Pair).filter(Pair.ratio.is_(None)).all():
-                if not pair.from_coin.enabled or not pair.to_coin.enabled:
-                    continue
-                self.logger.info(f"Initializing {pair.from_coin} vs {pair.to_coin}")
 
-                from_coin_price = all_tickers.get_price(pair.from_coin + self.config.BRIDGE)
-                if from_coin_price is None:
-                    self.logger.info(
-                        "Skipping initializing {}, symbol not found".format(pair.from_coin + self.config.BRIDGE)
-                    )
-                    continue
-
-                to_coin_price = all_tickers.get_price(pair.to_coin + self.config.BRIDGE)
-                if to_coin_price is None:
-                    self.logger.info(
-                        "Skipping initializing {}, symbol not found".format(pair.to_coin + self.config.BRIDGE)
-                    )
-                    continue
-
-                #pair.ratio = from_coin_price / to_coin_price
-                ratio = from_coin_price / to_coin_price
-                print(
-                    f"{pair.from_coin/pair.to_coin}="
-                    f"{ratio}"
-                )
 
 
 if __name__ == "__main__":

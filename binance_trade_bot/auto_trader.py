@@ -18,7 +18,17 @@ class AutoTrader:
         self.config = config
 
     def initialize(self):
-        #self.db.delete_pairs()
+        self.initialize_trade_thresholds()
+
+    def reset_coins(self):
+        self.logger.info('Resetting pairs and coins')
+        session: Session
+        with self.db.db_session() as session:
+            session.query(Pair).delete()
+            session.query(Coin).delete()
+            session.expunge_all()
+
+        self.db.set_coins(self.config.SUPPORTED_COIN_LIST)
         self.initialize_trade_thresholds()
 
     def transaction_through_bridge(self, pair: Pair, all_tickers: AllTickers):
@@ -115,21 +125,24 @@ class AutoTrader:
         Get Balance info
         """
         balance_coin = self.manager.get_currency_balance(coin.symbol)
-        balance_value = balance_coin * coin_price
-        print(
-            f"{coin.symbol} price is ${coin_price:.4f}, balance is {balance_coin:.2f} valued at {balance_value:.0f}$",
-        )
+        if balance_coin:
+            balance_value = balance_coin * coin_price
+            print(
+                f"{coin.symbol} price is ${coin_price:.4f}, balance is {balance_coin:.2f} valued at {balance_value:.0f}$",
+            )
 
         """
         Get Last Trade info
         """
         last_trade: Trade = self.db.get_last_trade()
-        last_trade_value = last_trade.crypto_trade_amount
-        print(
-            f"Last trade value {last_trade_value:.0f}$. "
-            f"Current value is {balance_value / last_trade_value * 100 - 100:.1f}% "
-            f"({balance_value - last_trade_value:.0f}$)"
-        )
+        if last_trade:
+            last_trade_value = last_trade.crypto_trade_amount
+            if last_trade_value:
+                print(
+                    f"Last trade value {last_trade_value:.0f}$. "
+                    f"Current value is {balance_value / last_trade_value * 100 - 100:.1f}% "
+                    f"({balance_value - last_trade_value:.0f}$)"
+                )
 
         for pair in self.db.get_pairs_from(coin):
             optional_coin_price = all_tickers.get_price(pair.to_coin + self.config.BRIDGE)
