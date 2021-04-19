@@ -56,3 +56,6 @@ class Trade(Base):  # pylint: disable=too-few-public-methods
             "crypto_trade_amount": self.crypto_trade_amount,
             "datetime": self.datetime.isoformat(),
         }
+
+    def __repr__(self):
+        return self.info()

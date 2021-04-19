@@ -165,6 +165,11 @@ class Database:
         with self.db_session() as session:
             session.query(ScoutHistory).filter(ScoutHistory.datetime < time_diff).delete()
 
+    def delete_pairs(self):
+        session: Session
+        with self.db_session() as session:
+            session.query(Pair).delete()
+
     def prune_value_history(self):
         session: Session
         with self.db_session() as session:
@@ -216,6 +221,13 @@ class Database:
 
     def start_trade_log(self, from_coin: Coin, to_coin: Coin, selling: bool):
         return TradeLog(self, from_coin, to_coin, selling)
+
+    def get_last_trade(self):
+        session: Session
+        with self.db_session() as session:
+            last_trade = session.query(Trade).filter(Trade.crypto_trade_amount != None).order_by(Trade.datetime.desc()).first()
+            session.expunge_all()
+            return last_trade
 
     def send_update(self, model):
         if not self.socketio_connect():

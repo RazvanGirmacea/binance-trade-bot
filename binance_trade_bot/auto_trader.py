@@ -1,4 +1,3 @@
-import threading
 from datetime import datetime
 from typing import Dict, List
 
@@ -8,7 +7,7 @@ from .binance_api_manager import AllTickers, BinanceAPIManager
 from .config import Config
 from .database import Database
 from .logger import Logger
-from .models import Coin, CoinValue, Pair
+from .models import Coin, CoinValue, Pair, Trade
 
 
 class AutoTrader:
@@ -19,24 +18,37 @@ class AutoTrader:
         self.config = config
 
     def initialize(self):
+        #self.db.delete_pairs()
         self.initialize_trade_thresholds()
 
-    def transaction_through_bridge(self, pair: Pair, all_tickers):
+    def transaction_through_bridge(self, pair: Pair, all_tickers: AllTickers):
         """
         Jump from the source coin to the destination coin through bridge coin
         """
-        if self.manager.sell_alt(pair.from_coin, self.config.BRIDGE) is None:
+        can_sell = False
+        balance = self.manager.get_currency_balance(pair.from_coin.symbol)
+        from_coin_price = all_tickers.get_price(pair.from_coin + self.config.BRIDGE)
+
+        if balance and balance * from_coin_price > self.manager.get_min_notional(pair.from_coin, self.config.BRIDGE):
+            can_sell = True
+        else:
+            self.logger.info("Skipping sell")
+
+        if can_sell and self.manager.sell_alt(pair.from_coin, self.config.BRIDGE, all_tickers) is None:
             self.logger.info("Couldn't sell, going back to scouting mode...")
             return None
 
         result = self.manager.buy_alt(pair.to_coin, self.config.BRIDGE, all_tickers)
+
         if result is not None:
+            self.db.set_current_coin(pair.to_coin)
             self.update_trade_threshold(pair.to_coin, float(result["price"]), all_tickers)
             return result
+
         self.logger.info("Couldn't buy, going back to scouting mode...")
         return None
 
-    def update_trade_threshold(self, coin: Coin, coin_price: float, all_tickers):
+    def update_trade_threshold(self, coin: Coin, coin_price: float, all_tickers: AllTickers):
         """
         Update all the coins with the threshold of buying the current held coin
         """
@@ -69,7 +81,7 @@ class AutoTrader:
             for pair in session.query(Pair).filter(Pair.ratio.is_(None)).all():
                 if not pair.from_coin.enabled or not pair.to_coin.enabled:
                     continue
-                # self.logger.info(f"Initializing {pair.from_coin} vs {pair.to_coin}")
+                self.logger.info(f"Initializing {pair.from_coin} vs {pair.to_coin}")
 
                 from_coin_price = all_tickers.get_price(pair.from_coin + self.config.BRIDGE)
                 if from_coin_price is None:
@@ -98,7 +110,26 @@ class AutoTrader:
         Given a coin, get the current price ratio for every other enabled coin
         """
         ratio_dict: Dict[Pair, float] = {}
-        threads = []
+
+        """
+        Get Balance info
+        """
+        balance_coin = self.manager.get_currency_balance(coin.symbol)
+        balance_value = balance_coin * coin_price
+        print(
+            f"{coin.symbol} price is ${coin_price:.4f}, balance is {balance_coin:.2f} valued at {balance_value:.0f}$",
+        )
+
+        """
+        Get Last Trade info
+        """
+        last_trade: Trade = self.db.get_last_trade()
+        last_trade_value = last_trade.crypto_trade_amount
+        print(
+            f"Last trade value {last_trade_value:.0f}$. "
+            f"Current value is {balance_value / last_trade_value * 100 - 100:.1f}% "
+            f"({balance_value - last_trade_value:.0f}$)"
+        )
 
         for pair in self.db.get_pairs_from(coin):
             optional_coin_price = all_tickers.get_price(pair.to_coin + self.config.BRIDGE)
@@ -109,11 +140,7 @@ class AutoTrader:
                 )
                 continue
 
-            thread = threading.Thread(
-                target=self.db.log_scout, args=(pair, pair.ratio, coin_price, optional_coin_price)
-            )
-            thread.start()
-            threads.append(thread)
+            self.db.log_scout(pair, pair.ratio, coin_price, optional_coin_price)
 
             # Obtain (current coin)/(optional coin)
             coin_opt_coin_ratio = coin_price / optional_coin_price
@@ -132,13 +159,16 @@ class AutoTrader:
                 / pair.ratio
                 * 100
             )
-            progress_absolute = coin_opt_coin_ratio / pair.ratio * 100
+
+
             print(
-                str(datetime.now()) + f" - SCOUTING:RESULT - "
-                f"{pair.to_coin} = {ratio_dict[pair]} "
-                f"({pair.from_coin}: {coin_price}, {pair.to_coin}: {optional_coin_price}) "
-                f"[progress = {progress: .2f}% , progress_nofeenomultiplier = {progress_absolute: .2f}%]"
+                f"[" + datetime.now().strftime("%H:%M:%S") + f"] "
+                f"{pair.to_coin.symbol:>6} ratio result = {ratio_dict[pair]:10.5f},"
+                f"(price = {optional_coin_price:>10.4f}) "
+                f"[{progress:.1f}%]",
+                flush=True
             )
+
         return ratio_dict
 
     def _jump_to_best_coin(self, coin: Coin, coin_price: float, all_tickers: AllTickers):
