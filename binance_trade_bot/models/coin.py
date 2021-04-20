@@ -11,6 +11,7 @@ class Coin(Base):
     def __init__(self, symbol, enabled=True):
         self.symbol = symbol
         self.enabled = enabled
+        self.last_trade_price = None
 
     def __add__(self, other):
         if isinstance(other, str):

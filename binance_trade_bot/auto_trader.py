@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Dict, List
+from tabulate import tabulate
 
 from sqlalchemy.orm import Session
 
@@ -29,6 +30,19 @@ class AutoTrader:
             session.expunge_all()
 
         self.db.set_coins(self.config.SUPPORTED_COIN_LIST)
+        self.initialize_trade_thresholds()
+
+    """
+    Useful to reset the Pairs table (reset all ratios)
+    """
+
+    def delete_pairs(self):
+        self.logger.info('Resetting pairs and coins')
+        session: Session
+        with self.db.db_session() as session:
+            session.query(Pair).delete()
+            session.expunge_all()
+
         self.initialize_trade_thresholds()
 
     def transaction_through_bridge(self, pair: Pair, all_tickers: AllTickers):
@@ -116,33 +130,41 @@ class AutoTrader:
         raise NotImplementedError()
 
     def _get_ratios(self, coin: Coin, coin_price: float, all_tickers: AllTickers):
-        """
-        Given a coin, get the current price ratio for every other enabled coin
-        """
-        ratio_dict: Dict[Pair, float] = {}
+        print_table = [["Time", "To Coin", "Result", "%", "To Price", "Possible Coins", "Possible Last"]]
+        is_lower_progress = False
 
         """
-        Get Balance info
-        """
+         Get Balance info
+         """
         balance_coin = self.manager.get_currency_balance(coin.symbol)
+        balance_value = last_trade = profit = 0
+        last_trade_symbol = None
+
         if balance_coin:
             balance_value = balance_coin * coin_price
             print(
                 f"{coin.symbol} price is ${coin_price:.4f}, balance is {balance_coin:.2f} valued at {balance_value:.0f}$",
             )
 
+            """
+            Get Last Trade info
+            """
+            last_trade: Trade = self.db.get_last_trade()
+            if last_trade and last_trade.crypto_trade_amount:
+                last_trade_value = last_trade.crypto_trade_amount
+                last_trade_symbol = last_trade.alt_coin_id
+                profit = balance_value / last_trade_value * 100 - 100;
+                if last_trade_value:
+                    print(
+                        f"Last trade value {last_trade_value:.0f}$. "
+                        f"Current value is {profit:.1f}% "
+                        f"({balance_value - last_trade_value:.0f}$)"
+                    )
+
         """
-        Get Last Trade info
+        Given a coin, get the current price ratio for every other enabled coin
         """
-        last_trade: Trade = self.db.get_last_trade()
-        if last_trade:
-            last_trade_value = last_trade.crypto_trade_amount
-            if last_trade_value:
-                print(
-                    f"Last trade value {last_trade_value:.0f}$. "
-                    f"Current value is {balance_value / last_trade_value * 100 - 100:.1f}% "
-                    f"({balance_value - last_trade_value:.0f}$)"
-                )
+        ratio_dict: Dict[Pair, float] = {}
 
         for pair in self.db.get_pairs_from(coin):
             optional_coin_price = all_tickers.get_price(pair.to_coin + self.config.BRIDGE)
@@ -162,25 +184,48 @@ class AutoTrader:
                 pair.to_coin, self.config.BRIDGE, False
             )
 
-            ratio_dict[pair] = (
-                coin_opt_coin_ratio - transaction_fee * self.config.SCOUT_MULTIPLIER * coin_opt_coin_ratio
-            ) - pair.ratio
+            ratio_dict[pair] = (coin_opt_coin_ratio -
+                                transaction_fee * self.config.SCOUT_MULTIPLIER * coin_opt_coin_ratio
+                                ) - pair.ratio
 
             # Output scout result for each selected pair
             progress = (
-                (coin_opt_coin_ratio - transaction_fee * self.config.SCOUT_MULTIPLIER * coin_opt_coin_ratio)
-                / pair.ratio
-                * 100
+                    (coin_opt_coin_ratio - transaction_fee * self.config.SCOUT_MULTIPLIER * coin_opt_coin_ratio)
+                    / pair.ratio
+                    * 100
             )
 
+            # mark at least one ratio is under 90%
+            if progress < 90:
+                is_lower_progress = True
 
-            print(
-                f"[" + datetime.now().strftime("%H:%M:%S") + f"] "
-                f"{pair.to_coin.symbol:>6} ratio result = {ratio_dict[pair]:10.5f},"
-                f"(price = {optional_coin_price:>10.4f}) "
-                f"[{progress:.1f}%]",
-                flush=True
-            )
+            print_table.append([datetime.now().strftime("%H:%M:%S"),
+                                "{:>6}".format(pair.to_coin.symbol),
+                                "{:10.5f}".format(ratio_dict[pair]),
+                                "{:.1f}%".format(progress),
+                                "{:>10.4f}".format(optional_coin_price),
+                                "{:10.3f}".format(balance_value / optional_coin_price * (1 - transaction_fee)),
+                                "{__last_possible_coins__}"])
+
+            """
+            Display progress for each coin
+            """
+            # print(
+            #     f"[{datetime.now().strftime('%H:%M:%S')}]"
+            #     f"{pair.to_coin.symbol:>6} result = {ratio_dict[pair]:10.5f} "
+            #     f"[{progress:.1f}%] "
+            #     f"({optional_coin_price:>10.4f}$) "
+            #     f"Possible coins {balance_value / optional_coin_price:10.3f}, __last_trade_coins__",
+            #     flush=True
+            # )
+
+        print(tabulate(print_table, headers="firstrow", tablefmt="github"))
+
+        if profit > 3 and is_lower_progress and last_trade_symbol != coin.symbol:
+            self.logger.warning("Profit > 3% and progress lower than 90%, maybe reset the pair values?")
+            #self.delete_pairs()
+            #self.logger.warning("Deleted pairs")
+            #return
 
         return ratio_dict
 

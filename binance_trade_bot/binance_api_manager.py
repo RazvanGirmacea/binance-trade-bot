@@ -221,16 +221,15 @@ class BinanceAPIManager:
         from_coin_price = all_tickers.get_price(origin_symbol + target_symbol)
 
         order_quantity = self._buy_quantity(origin_symbol, target_symbol, target_balance, from_coin_price)
-        self.logger.info(f"BUY QTY {order_quantity}")
+        self.logger.info(f"BUY QTY {order_quantity} of {origin_symbol} for ${target_balance}")
 
         # Try to buy until successful
         order = None
         while order is None:
             try:
-                order = self.binance_client.order_limit_buy(
+                order = self.binance_client.order_market_buy(
                     symbol=origin_symbol + target_symbol,
-                    quantity=order_quantity,
-                    price=from_coin_price,
+                    quoteOrderQty=target_balance
                 )
                 self.logger.info(order)
             except BinanceAPIException as e:
@@ -279,12 +278,12 @@ class BinanceAPIManager:
         order = None
         while order is None:
             # Should sell at calculated price to avoid lost coin
-            order = self.binance_client.order_limit_sell(
-                symbol=origin_symbol + target_symbol, quantity=(order_quantity), price=from_coin_price
+            order = self.binance_client.order_market_sell(
+                symbol=origin_symbol + target_symbol,
+                quantity=order_quantity
             )
 
-        self.logger.info("order")
-        self.logger.info(order)
+        self.logger.info(f"SELL order ID {order}")
 
         trade_log.set_ordered(origin_balance, target_balance, order_quantity)
 
