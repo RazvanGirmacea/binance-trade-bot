@@ -223,9 +223,8 @@ class AutoTrader:
 
         if profit > 3 and is_lower_progress and last_trade_symbol != coin.symbol:
             self.logger.warning("Profit > 3% and progress lower than 90%, maybe reset the pair values?")
-            #self.delete_pairs()
-            #self.logger.warning("Deleted pairs")
-            #return
+            self.delete_pairs()
+            self.logger.warning("Deleted pairs")
 
         return ratio_dict
 

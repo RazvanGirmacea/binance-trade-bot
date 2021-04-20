@@ -1,4 +1,5 @@
 from datetime import datetime
+from tabulate import tabulate
 
 from binance_trade_bot import backtest
 

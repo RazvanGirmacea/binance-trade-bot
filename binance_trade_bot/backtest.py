@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from traceback import format_exc
 from typing import Dict
+from tabulate import tabulate
 
 from sqlitedict import SqliteDict
 
@@ -33,7 +34,7 @@ class MockBinanceManager(BinanceAPIManager):
     ):
         super().__init__(config, db, logger)
         self.config = config
-        self.datetime = start_date or datetime(2021, 4, 1)
+        self.datetime = start_date or datetime(2021, 3, 1)
         self.balances = start_balances or {config.BRIDGE.symbol: 5000}
 
     def increment(self, interval=1):
@@ -46,7 +47,7 @@ class MockBinanceManager(BinanceAPIManager):
         return FakeAllTickers(self)
 
     def get_fee(self, origin_coin: Coin, target_coin: Coin, selling: bool):
-        return 0.0075
+        return 0.001
 
     def get_market_ticker_price(self, ticker_symbol: str):
         """
@@ -78,6 +79,7 @@ class MockBinanceManager(BinanceAPIManager):
         return self.balances.get(currency_symbol, 0)
 
     def buy_alt(self, origin_coin: Coin, target_coin: Coin, all_tickers: AllTickers):
+        self.logger.info(self.datetime)
         origin_symbol = origin_coin.symbol
         target_symbol = target_coin.symbol
 
@@ -97,6 +99,7 @@ class MockBinanceManager(BinanceAPIManager):
         return {"price": from_coin_price}
 
     def sell_alt(self, origin_coin: Coin, target_coin: Coin, all_tickers: AllTickers):
+        self.logger.info(self.datetime)
         origin_symbol = origin_coin.symbol
         target_symbol = target_coin.symbol
 
