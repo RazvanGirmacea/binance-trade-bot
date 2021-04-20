@@ -130,7 +130,7 @@ class AutoTrader:
         raise NotImplementedError()
 
     def _get_ratios(self, coin: Coin, coin_price: float, all_tickers: AllTickers):
-        print_table = [["Time", "To Coin", "Result", "%", "To Price", "Possible Coins", "Possible Last"]]
+        print_table = [["Time", "To Coin", "Result", "%", "To Price", "Possible Coins"]]
         is_lower_progress = False
 
         """
@@ -204,8 +204,7 @@ class AutoTrader:
                                 "{:10.5f}".format(ratio_dict[pair]),
                                 "{:.1f}%".format(progress),
                                 "{:>10.4f}".format(optional_coin_price),
-                                "{:10.3f}".format(balance_value / optional_coin_price * (1 - transaction_fee)),
-                                "{__last_possible_coins__}"])
+                                "{:10.3f}".format(balance_value / optional_coin_price * (1 - transaction_fee))])
 
             """
             Display progress for each coin
