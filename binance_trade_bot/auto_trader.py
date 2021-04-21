@@ -102,6 +102,9 @@ class AutoTrader:
                 print(f"{coin.symbol} = {coin_price}") #@@debug
                 pair.ratio = from_coin_price / coin_price
 
+            session.expunge_all()
+
+
     def initialize_trade_thresholds(self):
         """
         Initialize the buying threshold of all the coins for trading between them
