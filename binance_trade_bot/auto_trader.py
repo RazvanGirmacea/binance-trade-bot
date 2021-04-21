@@ -152,7 +152,7 @@ class AutoTrader:
 
         if balance_coin:
             balance_value = balance_coin * coin_price
-            print(
+            self.logger.info(
                 f"{coin.symbol} price is ${coin_price:.4f}, balance is {balance_coin:.2f} valued at {balance_value:.0f}$",
             )
 
@@ -165,7 +165,7 @@ class AutoTrader:
                 last_trade_symbol = last_trade.alt_coin_id
                 profit = balance_value / last_trade_value * 100 - 100;
                 if last_trade_value:
-                    print(
+                    self.logger.info(
                         f"Last trade value {last_trade_value:.0f}$. "
                         f"Current value is {profit:.1f}% "
                         f"({balance_value - last_trade_value:.0f}$)"
