@@ -63,7 +63,7 @@ class AutoTrader:
             return None
 
         result = self.manager.buy_alt(pair.to_coin, self.config.BRIDGE, all_tickers)
-        print(f"RESULT = {result}  --- (to_coin {pair.to_coin.symbol})") #@@debug
+        self.logger.info(f"RESULT = {result}  --- (to_coin {pair.to_coin.symbol})")
 
         if float(result["price"]) == 0:
             result["price"] = float(result["cummulativeQuoteQty"]) / float(result["origQty"])
@@ -99,7 +99,6 @@ class AutoTrader:
                 if coin_price is None:
                     coin_price = all_tickers.get_price(pair.to_coin + self.config.BRIDGE)
 
-                print(f"{coin.symbol} = {coin_price}") #@@debug
                 pair.ratio = from_coin_price / coin_price
 
             session.commit()
