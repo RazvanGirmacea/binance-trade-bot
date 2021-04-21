@@ -102,7 +102,7 @@ class AutoTrader:
                 print(f"{coin.symbol} = {coin_price}") #@@debug
                 pair.ratio = from_coin_price / coin_price
 
-            session.expunge_all()
+            session.commit()
 
 
     def initialize_trade_thresholds(self):
