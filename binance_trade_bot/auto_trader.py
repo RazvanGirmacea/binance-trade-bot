@@ -8,7 +8,7 @@ from .binance_api_manager import AllTickers, BinanceAPIManager
 from .config import Config
 from .database import Database
 from .logger import Logger
-from .models import Coin, CoinValue, Pair, Trade
+from .models import Coin, CoinValue, Pair, Trade, CurrentCoin
 
 
 class AutoTrader:
@@ -22,15 +22,18 @@ class AutoTrader:
         self.initialize_trade_thresholds()
 
     def reset_coins(self):
-        self.logger.info('Resetting pairs and coins')
+        self.logger.warning('Resetting pairs and coins ... ')
+
         session: Session
         with self.db.db_session() as session:
             session.query(Pair).delete()
             session.query(Coin).delete()
+            session.query(CurrentCoin).delete()
             session.expunge_all()
 
         self.db.set_coins(self.config.SUPPORTED_COIN_LIST)
         self.initialize_trade_thresholds()
+        return True
 
     """
     Useful to reset the Pairs table (reset all ratios)
@@ -115,7 +118,7 @@ class AutoTrader:
             for pair in session.query(Pair).filter(Pair.ratio.is_(None)).all():
                 if not pair.from_coin.enabled or not pair.to_coin.enabled:
                     continue
-                self.logger.info(f"Initializing {pair.from_coin} vs {pair.to_coin}")
+                print(f"Initializing {pair.from_coin} vs {pair.to_coin}")
 
                 from_coin_price = all_tickers.get_price(pair.from_coin + self.config.BRIDGE)
                 if from_coin_price is None:
@@ -140,6 +143,8 @@ class AutoTrader:
         raise NotImplementedError()
 
     def _get_ratios(self, coin: Coin, coin_price: float, all_tickers: AllTickers):
+        #self.reset_coins() ## reset coins parity and reinitiate coins from supported coins
+
         print_table = [["Time", "To Coin", "Result", "%", "To Price", "Possible Coins"]]
         is_lower_progress = False
 
