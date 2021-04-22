@@ -21,6 +21,9 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
             "strategy": "default",
             "sell_timeout": "0",
             "buy_timeout": "0",
+            "profit_to_reset": "3",
+            "number_of_coins_under": "6",
+            "progress_percentage_under": "90"
         }
 
         if not os.path.exists(CFG_FL_NAME):
@@ -48,18 +51,15 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         # Get config for strategy coins reset
         self.PROGRESS_PERCENTAGE_UNDER = int(
             os.environ.get("PROGRESS_PERCENTAGE_UNDER") or
-            config.get(USER_CFG_SECTION, "progress_percentage_under") or
-            90
+            config.get(USER_CFG_SECTION, "progress_percentage_under")
         )
         self.NUMBER_OF_COINS_UNDER = int(
             os.environ.get("NUMBER_OF_COINS_UNDER") or
-            config.get(USER_CFG_SECTION, "number_of_coins_under") or
-            6
+            config.get(USER_CFG_SECTION, "number_of_coins_under")
         )
         self.PROFIT_TO_RESET = int(
             os.environ.get("PROFIT_TO_RESET") or
-            config.get(USER_CFG_SECTION, "profit_to_reset") or
-            3
+            config.get(USER_CFG_SECTION, "profit_to_reset")
         )
 
         # Get config for binance
