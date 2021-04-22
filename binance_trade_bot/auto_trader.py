@@ -144,7 +144,7 @@ class AutoTrader:
 
     def _get_ratios(self, coin: Coin, coin_price: float, all_tickers: AllTickers):
         print_table = [["Time", "To Coin", "Result", "%", "To Price", "Possible Coins"]]
-        is_lower_progress = False
+        is_lower_progress = 0
 
         """
          Get Balance info
@@ -226,9 +226,9 @@ class AutoTrader:
                     * 100
             )
 
-            # mark at least one ratio is under 90%
-            if progress < 90:
-                is_lower_progress = True
+            # mark at least one ratio is under 90% (or self.config.PROGRESS_PERCENTAGE_UNDER)
+            if progress < self.config.PROGRESS_PERCENTAGE_UNDER:
+                is_lower_progress = is_lower_progress + 1
 
             print_table.append([datetime.now().strftime("%H:%M:%S"),
                                 "{:>6}".format(pair.to_coin.symbol),
@@ -251,8 +251,19 @@ class AutoTrader:
 
         print(tabulate(print_table, headers="firstrow", tablefmt="github"))
 
-        if profit > 3 and is_lower_progress and last_trade_symbol != coin.symbol:
-            self.logger.warning("Profit > 3% and progress lower than 90%, maybe reset the pair values?")
+        # if profit > 3% and at least one coin ratio is under 90%, reset to force jump and increase balance $
+        if profit > self.config.PROFIT_TO_RESET and is_lower_progress and last_trade_symbol != coin.symbol:
+            self.logger.warning(f"Profit > {self.config.PROFIT_TO_RESET}% "
+                                f"and progress lower than {self.config.PROGRESS_PERCENTAGE_UNDER}%, "
+                                f"maybe reset the pair values?")
+            self.delete_pairs()
+            self.logger.warning("Deleted pairs")
+
+        # if profit > 0 and more coins are lower progress, reset coins to force jump
+        if profit > 0 and is_lower_progress > self.config.NUMBER_OF_COINS_UNDER and last_trade_symbol != coin.symbol:
+            self.logger.warning(f"Profit > 0% and {self.config.NUMBER_OF_COINS_UNDER} "
+                                f"progress lower than {self.config.PROGRESS_PERCENTAGE_UNDER}%, "
+                                f"maybe reset the pair values?")
             self.delete_pairs()
             self.logger.warning("Deleted pairs")
 

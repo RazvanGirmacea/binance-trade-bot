@@ -45,6 +45,23 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
             os.environ.get("SCOUT_SLEEP_TIME") or config.get(USER_CFG_SECTION, "scout_sleep_time")
         )
 
+        # Get config for strategy coins reset
+        self.PROGRESS_PERCENTAGE_UNDER = int(
+            os.environ.get("PROGRESS_PERCENTAGE_UNDER") or
+            config.get(USER_CFG_SECTION, "progress_percentage_under") or
+            90
+        )
+        self.NUMBER_OF_COINS_UNDER = int(
+            os.environ.get("NUMBER_OF_COINS_UNDER") or
+            config.get(USER_CFG_SECTION, "number_of_coins_under") or
+            6
+        )
+        self.PROFIT_TO_RESET = int(
+            os.environ.get("PROFIT_TO_RESET") or
+            config.get(USER_CFG_SECTION, "profit_to_reset") or
+            3
+        )
+
         # Get config for binance
         self.BINANCE_API_KEY = os.environ.get("API_KEY") or config.get(USER_CFG_SECTION, "api_key")
         self.BINANCE_API_SECRET_KEY = os.environ.get("API_SECRET_KEY") or config.get(USER_CFG_SECTION, "api_secret_key")

@@ -25,3 +25,7 @@ class Coin(Base):
 
     def info(self):
         return {"symbol": self.symbol, "enabled": self.enabled}
+
+    def count(self, enabled = 1):
+
+        pass
