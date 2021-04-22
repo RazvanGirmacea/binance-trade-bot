@@ -177,6 +177,7 @@ class AutoTrader:
                     last_coin_trade: Trade = self.db.get_last_trade(last_trade)
                     if last_coin_trade:
                         profit_coins = last_trade.alt_trade_amount / last_coin_trade.alt_trade_amount * 100 - 100
+                        profit_last_trade = last_trade.crypto_trade_amount / last_coin_trade.crypto_trade_amount * 100 - 100
 
                         last_coin_trade_price = last_coin_trade.crypto_trade_amount / last_coin_trade.alt_trade_amount
                         updown_string = 'increased' if last_coin_trade_price <= coin_price else 'decreased'
@@ -188,6 +189,8 @@ class AutoTrader:
                                                     last_coin_trade.datetime.strftime("%d/%m/%Y %H:%M:%S")))
                         self.db.logger.info(f"Price {updown_string} by {price_increase:.1f}% "
                                             f"(From {last_coin_trade_price:.4f} to {coin_price:.4f})")
+                        self.db.logger.info(f"Last {coin.symbol} trade balance "
+                                            f"was {last_coin_trade.crypto_trade_amount:.0f}$ (now {profit_last_trade:.1f}%)")
 
         """
         Given a coin, get the current price ratio for every other enabled coin
