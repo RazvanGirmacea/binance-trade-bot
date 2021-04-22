@@ -217,11 +217,19 @@ class Database:
     def start_trade_log(self, from_coin: Coin, to_coin: Coin, selling: bool):
         return TradeLog(self, from_coin, to_coin, selling)
 
-    def get_last_trade(self):
+    def get_last_trade(self, previous_trade:Trade=None):
         session: Session
         with self.db_session() as session:
             last_trade = session.query(Trade).filter(
-                Trade.crypto_trade_amount is not None).order_by(Trade.datetime.desc()).first()
+                Trade.crypto_trade_amount is not None,
+                Trade.state == "COMPLETE",
+                Trade.selling == "0"
+            )
+            if previous_trade is not None:
+                last_trade = last_trade.filter(Trade.alt_coin_id == previous_trade.alt_coin_id,
+                                               Trade.datetime < previous_trade.datetime)
+            last_trade = last_trade.order_by(Trade.datetime.desc())
+            last_trade = last_trade.first()
             session.expunge_all()
             return last_trade
 

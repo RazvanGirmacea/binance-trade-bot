@@ -143,8 +143,6 @@ class AutoTrader:
         raise NotImplementedError()
 
     def _get_ratios(self, coin: Coin, coin_price: float, all_tickers: AllTickers):
-        #self.reset_coins() ## reset coins parity and reinitiate coins from supported coins
-
         print_table = [["Time", "To Coin", "Result", "%", "To Price", "Possible Coins"]]
         is_lower_progress = False
 
@@ -173,8 +171,23 @@ class AutoTrader:
                     self.logger.info(
                         f"Last trade value {last_trade_value:.0f}$. "
                         f"Current value is {profit:.1f}% "
-                        f"({balance_value - last_trade_value:.0f}$)"
+                        f"({balance_value - last_trade_value:.0f}$)."
                     )
+
+                    last_coin_trade: Trade = self.db.get_last_trade(last_trade)
+                    if last_coin_trade:
+                        profit_coins = last_trade.alt_trade_amount / last_coin_trade.alt_trade_amount * 100 - 100
+
+                        last_coin_trade_price = last_coin_trade.crypto_trade_amount / last_coin_trade.alt_trade_amount
+                        updown_string = 'increased' if last_coin_trade_price <= coin_price else 'decreased'
+                        price_increase = coin_price / last_coin_trade_price * 100 - 100
+                        self.db.logger.info("You had {:.2f} coins, now {:.1f}% more since last {} trade at {}"
+                                            .format(last_coin_trade.alt_trade_amount,
+                                                    profit_coins,
+                                                    coin.symbol,
+                                                    last_coin_trade.datetime.strftime("%d/%m/%Y %H:%M:%S")))
+                        self.db.logger.info(f"Price {updown_string} by {price_increase:.1f}% "
+                                            f"(From {last_coin_trade_price:.4f} to {coin_price:.4f})")
 
         """
         Given a coin, get the current price ratio for every other enabled coin
