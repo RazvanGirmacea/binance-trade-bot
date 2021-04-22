@@ -156,7 +156,7 @@ class AutoTrader:
         if balance_coin:
             balance_value = balance_coin * coin_price
             self.logger.info(
-                f"{coin.symbol} price is ${coin_price:.4f}, balance is {balance_coin:.2f} valued at {balance_value:.0f}$",
+                f"--- {coin.symbol} price is ${coin_price:.4f}, balance is {balance_coin:.2f} valued at {balance_value:.0f}$",
             )
 
             """
