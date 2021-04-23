@@ -24,8 +24,8 @@ class Strategy(AutoTrader):
                 self.logger.info("Skipping scouting... current coin {} not found".format(coin + self.config.BRIDGE))
                 continue
 
-            ### @fix ugly *10 to avoid error
-            min_notional = self.manager.get_min_notional(coin.symbol, self.config.BRIDGE.symbol) * 10
+            min_notional = self.manager.get_min_notional(coin.symbol, self.config.BRIDGE.symbol)
+            min_notional = max(min_notional, 100)
 
             if coin.symbol != current_coin_symbol and coin_price * current_coin_balance < min_notional:
                 continue

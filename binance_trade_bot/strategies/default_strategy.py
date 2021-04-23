@@ -47,6 +47,7 @@ class Strategy(AutoTrader):
         """
         Decide what is the current coin, and set it up in the DB.
         """
+        print('running initialize_current_coin in default_strategy')
         if self.db.get_current_coin() is None:
             current_coin_symbol = self.config.CURRENT_COIN_SYMBOL
             if not current_coin_symbol:

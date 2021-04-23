@@ -71,7 +71,9 @@ class AutoTrader:
         result = self.manager.buy_alt(pair.to_coin, self.config.BRIDGE, all_tickers)
         self.logger.info(f"RESULT = {result}  --- (to_coin {pair.to_coin.symbol})")
 
-        if float(result["price"]) == 0:
+        self.update_values()  # update coin balance after selling
+
+        if result and float(result["price"]) == 0:
             result["price"] = float(result["cummulativeQuoteQty"]) / float(result["origQty"])
 
         if result is not None:
