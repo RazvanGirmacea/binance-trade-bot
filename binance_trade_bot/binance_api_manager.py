@@ -9,7 +9,7 @@ from cachetools import TTLCache, cached
 from .config import Config
 from .database import Database
 from .logger import Logger
-from .models import Coin
+from .models import Coin, CoinValue
 
 
 class AllTickers:  # pylint: disable=too-few-public-methods
@@ -89,9 +89,9 @@ class BinanceAPIManager:
         return None
 
     def retry(self, func, *args, **kwargs):
-        time.sleep(1)
+        time.sleep(2)
         attempts = 0
-        while attempts < 20:
+        while attempts < 30:
             try:
                 return func(*args, **kwargs)
             except Exception as e:  # pylint: disable=broad-except
@@ -212,6 +212,7 @@ class BinanceAPIManager:
         """
         Buy altcoin
         """
+        #Update balance first
         trade_log = self.db.start_trade_log(origin_coin, target_coin, False)
         origin_symbol = origin_coin.symbol
         target_symbol = target_coin.symbol
@@ -222,6 +223,12 @@ class BinanceAPIManager:
 
         order_quantity = self._buy_quantity(origin_symbol, target_symbol, target_balance, from_coin_price)
         self.logger.info(f"BUY QTY {order_quantity} of {origin_symbol} for ${target_balance}")
+
+        # prevent low amount buy
+        if target_balance < 100:
+            self.logger.warning(f"Couldn't BUY with {target_balance}$")
+            time.sleep(2)
+            return None
 
         # Try to buy until successful
         order = None
@@ -275,6 +282,13 @@ class BinanceAPIManager:
         self.logger.info(f"Selling {order_quantity} of {origin_symbol}")
 
         self.logger.info(f"Balance is {origin_balance}")
+
+        # prevent low amount buy
+        if origin_balance * from_coin_price < 100:
+            self.logger.warning(f"Couldn't SELL with {origin_balance * from_coin_price}$")
+            time.sleep(2)
+            return None
+
         order = None
         while order is None:
             # Should sell at calculated price to avoid lost coin

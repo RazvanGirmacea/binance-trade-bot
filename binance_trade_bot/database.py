@@ -111,6 +111,8 @@ class Database:
             current_coin = session.query(CurrentCoin).order_by(CurrentCoin.datetime.desc()).first()
             if current_coin is None:
                 return None
+
+
             coin = current_coin.coin
             session.expunge(coin)
             return coin

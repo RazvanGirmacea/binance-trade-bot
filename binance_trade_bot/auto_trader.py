@@ -53,6 +53,8 @@ class AutoTrader:
         Jump from the source coin to the destination coin through bridge coin
         """
         can_sell = False
+        self.update_values() #update coin balance first
+
         balance = self.manager.get_currency_balance(pair.from_coin.symbol)
         from_coin_price = all_tickers.get_price(pair.from_coin + self.config.BRIDGE)
 
@@ -65,6 +67,7 @@ class AutoTrader:
             self.logger.info("Couldn't sell, going back to scouting mode...")
             return None
 
+        self.update_values() #update coin values before buying
         result = self.manager.buy_alt(pair.to_coin, self.config.BRIDGE, all_tickers)
         self.logger.info(f"RESULT = {result}  --- (to_coin {pair.to_coin.symbol})")
 
