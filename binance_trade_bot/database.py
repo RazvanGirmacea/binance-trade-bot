@@ -128,6 +128,7 @@ class Database:
 
     def get_pairs_from(self, from_coin: Union[Coin, str], only_enabled=True) -> List[Pair]:
         from_coin = self.get_coin(from_coin)
+
         session: Session
         with self.db_session() as session:
             pairs = session.query(Pair).filter(Pair.from_coin == from_coin)

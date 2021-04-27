@@ -272,6 +272,12 @@ class AutoTrader:
             self.delete_pairs()
             self.logger.warning("Deleted pairs")
 
+        # if all coins are lower progress, reset coins to force jump
+        if is_lower_progress >= (len(self.db.get_coins())-1):
+            self.logger.warning("Resetting pairs because all are low")
+            self.delete_pairs()
+            self.logger.warning("Deleted pairs")
+
         return ratio_dict
 
     def _jump_to_best_coin(self, coin: Coin, coin_price: float, all_tickers: AllTickers):
