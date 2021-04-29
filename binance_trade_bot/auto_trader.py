@@ -45,9 +45,8 @@ class AutoTrader:
         self.logger.info('Resetting pairs and coins')
         session: Session
         with self.db.db_session() as session:
-            session.query(Pair).delete()
-            session.expunge_all()
-
+            for pair in session.query(Pair):
+                pair.ratio = None
         self.initialize_trade_thresholds()
 
     def transaction_through_bridge(self, pair: Pair, all_tickers: AllTickers):
@@ -142,6 +141,7 @@ class AutoTrader:
                     continue
 
                 pair.ratio = from_coin_price / to_coin_price
+                session.commit()
 
     def scout(self):
         """

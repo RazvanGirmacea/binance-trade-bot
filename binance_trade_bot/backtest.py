@@ -34,7 +34,7 @@ class MockBinanceManager(BinanceAPIManager):
     ):
         super().__init__(config, db, logger)
         self.config = config
-        self.datetime = start_date or datetime(2021, 3, 1)
+        self.datetime = start_date or datetime(2021, 4, 1)
         self.balances = start_balances or {config.BRIDGE.symbol: 5000}
 
     def increment(self, interval=1):
