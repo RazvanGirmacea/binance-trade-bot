@@ -15,7 +15,7 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         config["DEFAULT"] = {
             "bridge": "USDT",
             "scout_multiplier": "5",
-            "scout_sleep_time": "5",
+            "scout_sleep_time": "50",
             "hourToKeepScoutHistory": "1",
             "tld": "com",
             "strategy": "default",
@@ -23,7 +23,8 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
             "buy_timeout": "0",
             "profit_to_reset": "3",
             "number_of_coins_under": "6",
-            "progress_percentage_under": "90"
+            "progress_percentage_under": "90",
+            "log_user": ""
         }
 
         if not os.path.exists(CFG_FL_NAME):
@@ -47,6 +48,9 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
         self.SCOUT_SLEEP_TIME = int(
             os.environ.get("SCOUT_SLEEP_TIME") or config.get(USER_CFG_SECTION, "scout_sleep_time")
         )
+
+        # Get config for log username (like discord)
+        self.LOG_USER = os.environ.get("LOG_USER") or config.get(USER_CFG_SECTION, "log_user")
 
         # Get config for strategy coins reset
         self.PROGRESS_PERCENTAGE_UNDER = int(

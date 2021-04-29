@@ -160,7 +160,8 @@ class Database:
             pair = session.merge(pair)
             sh = ScoutHistory(pair, target_ratio, current_coin_price, other_coin_price)
             session.add(sh)
-            self.send_update(sh)
+            session.commit()
+            #self.send_update(sh)
 
     def prune_scout_history(self):
         time_diff = datetime.now() - timedelta(hours=self.config.SCOUT_HISTORY_PRUNE_TIME)

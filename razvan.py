@@ -11,6 +11,7 @@ from binance_trade_bot.logger import Logger
 from binance_trade_bot.models import Coin
 from binance_trade_bot.strategies import get_strategy
 from binance_trade_bot.models import Coin, CoinValue, Pair, Trade
+from datetime import datetime
 
 
 class Razvan:
@@ -28,12 +29,14 @@ class Razvan:
         self.trader = strategy(self.manager, self.db, self.logger, self.config)
         self.logger.info(f"Chosen strategy: {self.config.STRATEGY}")
 
-        #all_tickers = self.manager.get_all_market_tickers()
+        all_tickers = self.manager.get_all_market_tickers()
 
-        self.db.set_coins(self.config.SUPPORTED_COIN_LIST)
+        start = datetime.now()
+        print(datetime.now() - start)
+        print(all_tickers.get_price("VETUSDT"))
+        print(datetime.now() - start)
 
         return
-
 
 
 if __name__ == "__main__":

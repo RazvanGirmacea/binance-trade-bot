@@ -11,6 +11,8 @@ from .logger import Logger
 from .models import Coin, CoinValue, Pair, Trade, CurrentCoin
 
 
+
+
 class AutoTrader:
     def __init__(self, binance_manager: BinanceAPIManager, database: Database, logger: Logger, config: Config):
         self.manager = binance_manager
@@ -212,7 +214,6 @@ class AutoTrader:
                 continue
 
             self.db.log_scout(pair, pair.ratio, coin_price, optional_coin_price)
-
             # Obtain (current coin)/(optional coin)
             coin_opt_coin_ratio = coin_price / optional_coin_price
 

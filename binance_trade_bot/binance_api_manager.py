@@ -222,11 +222,11 @@ class BinanceAPIManager:
         from_coin_price = all_tickers.get_price(origin_symbol + target_symbol)
 
         order_quantity = self._buy_quantity(origin_symbol, target_symbol, target_balance, from_coin_price)
-        self.logger.info(f"BUY QTY {order_quantity} of {origin_symbol} for ${target_balance}")
+        self.logger.info(f"BUY QTY {order_quantity} of {origin_symbol} for ${target_balance} {self.config.LOG_USER}")
 
         # prevent low amount buy
         if target_balance < 100:
-            self.logger.warning(f"Couldn't BUY with {target_balance}$")
+            self.logger.warning(f"Couldn't BUY with {target_balance}$ {self.config.LOG_USER}")
             time.sleep(2)
             return None
 
@@ -252,7 +252,7 @@ class BinanceAPIManager:
         if stat is None:
             return None
 
-        self.logger.info(f"Bought {origin_symbol}")
+        self.logger.info(f"Bought {origin_symbol} {self.config.LOG_USER}")
         trade_log.set_complete(stat["cummulativeQuoteQty"])
 
         return order
@@ -279,13 +279,13 @@ class BinanceAPIManager:
         from_coin_price = all_tickers.get_price(origin_symbol + target_symbol)
 
         order_quantity = self._sell_quantity(origin_symbol, target_symbol, origin_balance)
-        self.logger.info(f"Selling {order_quantity} of {origin_symbol}")
+        self.logger.info(f"Selling {order_quantity} of {origin_symbol} {self.config.LOG_USER}")
 
         self.logger.info(f"Balance is {origin_balance}")
 
         # prevent low amount buy
         if origin_balance * from_coin_price < 100:
-            self.logger.warning(f"Couldn't SELL with {origin_balance * from_coin_price}$")
+            self.logger.warning(f"Couldn't SELL with {origin_balance * from_coin_price}$ {self.config.LOG_USER}")
             time.sleep(2)
             return None
 
@@ -313,7 +313,7 @@ class BinanceAPIManager:
         while new_balance >= origin_balance:
             new_balance = self.get_currency_balance(origin_symbol)
 
-        self.logger.info(f"Sold {origin_symbol}")
+        self.logger.info(f"Sold {origin_symbol} {self.config.LOG_USER}")
 
         trade_log.set_complete(stat["cummulativeQuoteQty"])
 
