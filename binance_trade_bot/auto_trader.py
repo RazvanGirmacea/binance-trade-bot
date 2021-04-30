@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 from typing import Dict, List
 from tabulate import tabulate
 
@@ -9,8 +9,6 @@ from .config import Config
 from .database import Database
 from .logger import Logger
 from .models import Coin, CoinValue, Pair, Trade, CurrentCoin
-
-
 
 
 class AutoTrader:
@@ -54,7 +52,7 @@ class AutoTrader:
         Jump from the source coin to the destination coin through bridge coin
         """
         can_sell = False
-        self.update_values() #update coin balance first
+        self.update_values()  # update coin balance first
 
         balance = self.manager.get_currency_balance(pair.from_coin.symbol)
         from_coin_price = all_tickers.get_price(pair.from_coin + self.config.BRIDGE)
@@ -68,7 +66,7 @@ class AutoTrader:
             self.logger.info("Couldn't sell, going back to scouting mode...")
             return None
 
-        self.update_values() #update coin values before buying
+        self.update_values()  # update coin values before buying
         result = self.manager.buy_alt(pair.to_coin, self.config.BRIDGE, all_tickers)
         self.logger.info(f"RESULT = {result}  --- (to_coin {pair.to_coin.symbol})")
 
@@ -111,7 +109,6 @@ class AutoTrader:
                 pair.ratio = from_coin_price / coin_price
 
             session.commit()
-
 
     def initialize_trade_thresholds(self):
         """
@@ -162,8 +159,10 @@ class AutoTrader:
 
         if balance_coin:
             balance_value = balance_coin * coin_price
-            self.logger.info(
+            self.print_or_log(
                 f"--- {coin.symbol} price is ${coin_price:.4f}, balance is {balance_coin:.2f} valued at {balance_value:.0f}$",
+                self.config.LOG_MINUTES,
+                self.logger
             )
 
             """
@@ -175,10 +174,12 @@ class AutoTrader:
                 last_trade_symbol = last_trade.alt_coin_id
                 profit = balance_value / last_trade_value * 100 - 100;
                 if last_trade_value:
-                    self.logger.info(
+                    self.print_or_log(
                         f"Last trade value {last_trade_value:.0f}$. "
                         f"Current value is {profit:.1f}% "
-                        f"({balance_value - last_trade_value:.0f}$)."
+                        f"({balance_value - last_trade_value:.0f}$).",
+                        self.config.LOG_MINUTES,
+                        self.logger
                     )
 
                     last_coin_trade: Trade = self.db.get_last_trade(last_trade)
@@ -189,15 +190,24 @@ class AutoTrader:
                         last_coin_trade_price = last_coin_trade.crypto_trade_amount / last_coin_trade.alt_trade_amount
                         updown_string = 'increased' if last_coin_trade_price <= coin_price else 'decreased'
                         price_increase = coin_price / last_coin_trade_price * 100 - 100
-                        self.db.logger.info("You had {:.2f} coins, now {:.1f}% more since last {} trade at {}"
-                                            .format(last_coin_trade.alt_trade_amount,
-                                                    profit_coins,
-                                                    coin.symbol,
-                                                    last_coin_trade.datetime.strftime("%d/%m/%Y %H:%M:%S")))
-                        self.db.logger.info(f"Price {updown_string} by {price_increase:.1f}% "
-                                            f"(From {last_coin_trade_price:.4f} to {coin_price:.4f})")
-                        self.db.logger.info(f"Last {coin.symbol} trade balance "
-                                            f"was {last_coin_trade.crypto_trade_amount:.0f}$ (now {profit_last_trade:.1f}%)")
+                        self.print_or_log("You had {:.2f} coins, now {:.1f}% more since last {} trade at {}"
+                                          .format(last_coin_trade.alt_trade_amount,
+                                                  profit_coins,
+                                                  coin.symbol,
+                                                  last_coin_trade.datetime.strftime("%d/%m/%Y %H:%M:%S")),
+                                          self.config.LOG_MINUTES,
+                                          self.logger
+                                          )
+                        self.print_or_log(f"Price {updown_string} by {price_increase:.1f}% "
+                                          f"(From {last_coin_trade_price:.4f} to {coin_price:.4f})",
+                                          self.config.LOG_MINUTES,
+                                          self.logger
+                                          )
+                        self.print_or_log(f"Last {coin.symbol} trade balance "
+                                          f"was {last_coin_trade.crypto_trade_amount:.0f}$ (now {profit_last_trade:.1f}%)",
+                                          self.config.LOG_MINUTES,
+                                          self.logger
+                                          )
 
         """
         Given a coin, get the current price ratio for every other enabled coin
@@ -255,7 +265,10 @@ class AutoTrader:
             #     flush=True
             # )
 
-        print(tabulate(print_table, headers="firstrow", tablefmt="github"))
+        self.print_or_log(tabulate(print_table, headers="firstrow", tablefmt="github"),
+                          self.config.LOG_MINUTES,
+                          self.logger
+                          )
 
         # if profit > 3% and at least one coin ratio is under 90%, reset to force jump and increase balance $
         if profit > self.config.PROFIT_TO_RESET and is_lower_progress and last_trade_symbol != coin.symbol:
@@ -274,7 +287,7 @@ class AutoTrader:
             self.logger.warning("Deleted pairs")
 
         # if all coins are lower progress, reset coins to force jump
-        if is_lower_progress >= (len(self.db.get_coins())-1):
+        if is_lower_progress >= (len(self.db.get_coins()) - 1):
             self.logger.warning("Resetting pairs because all are low")
             self.delete_pairs()
             self.logger.warning("Deleted pairs")
@@ -338,3 +351,14 @@ class AutoTrader:
                 cv = CoinValue(coin, balance, usd_value, btc_value, datetime=now)
                 session.add(cv)
                 self.db.send_update(cv)
+
+    ########
+    ### To prevent spam in Logs, print or log a message every X minutes
+    #######
+    @staticmethod
+    def print_or_log(message, minutes=10, logger=None):
+        if not datetime.now().minute % minutes and Logger:
+            logger.info(message)
+        else:
+            print(message)
+        pass

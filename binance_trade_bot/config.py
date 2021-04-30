@@ -24,7 +24,8 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
             "profit_to_reset": "3",
             "number_of_coins_under": "6",
             "progress_percentage_under": "90",
-            "log_user": ""
+            "log_user": "",
+            "log_minutes": "15"
         }
 
         if not os.path.exists(CFG_FL_NAME):
@@ -49,8 +50,14 @@ class Config:  # pylint: disable=too-few-public-methods,too-many-instance-attrib
             os.environ.get("SCOUT_SLEEP_TIME") or config.get(USER_CFG_SECTION, "scout_sleep_time")
         )
 
+
         # Get config for log username (like discord)
         self.LOG_USER = os.environ.get("LOG_USER") or config.get(USER_CFG_SECTION, "log_user")
+
+        # get config for log or print
+        self.LOG_MINUTES = int(
+            os.environ.get("LOG_MINUTES") or config.get(USER_CFG_SECTION, "log_minutes")
+        )
 
         # Get config for strategy coins reset
         self.PROGRESS_PERCENTAGE_UNDER = int(

@@ -61,6 +61,7 @@ Create a .cfg file named `user.cfg` based off `.user.cfg.example`, then add your
 -   **number_of_coins_under** - Number of coins under the progress_percentage_under to reset coins ratio
 -   **profit_to_reset** - profit over to reset
 -   **log_user** - Apprise mention user (Example for Discord: `<@234324324252523523253>`, taken from Discord API Mode -> Copy User ID)
+-   **log_minutes** - Interval to post in log/discord vs terminal
 #### Environment Variables
 
 All of the options provided in `user.cfg` can also be configured using environment variables.
